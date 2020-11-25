@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/seven4x/videosrt/app"
@@ -43,6 +44,11 @@ var clearCmd = &cobra.Command{
 	Long:  `clear`,
 	Run: func(cmd *cobra.Command, args []string) {
 		instance.ClearOssFile(app.GetMp3FileList(app.Mp3UploadRecord))
+		log.Print("清除成功")
+		err := os.Remove(app.Mp3UploadRecord)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	},
 }
 

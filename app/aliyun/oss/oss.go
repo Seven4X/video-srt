@@ -67,7 +67,7 @@ func (c AliyunOss) RemoveFile(objectNames []string) {
 	if err != nil {
 		println(err.Error())
 	}
-	log.Print(json.Marshal(result))
+	log.Print(json.Marshal(result.DeletedObjects))
 }
 
 //获取文件 url link

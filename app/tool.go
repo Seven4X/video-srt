@@ -141,6 +141,9 @@ func GetMp3FileList(fileName string) []string {
 	mp3s := make([]string, 0)
 	for scanner.Scan() {
 		file := scanner.Text()
+		if file == "" {
+			continue
+		}
 		mp3s = append(mp3s, file)
 	}
 	return mp3s
