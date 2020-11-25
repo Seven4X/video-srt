@@ -22,10 +22,8 @@ func WinDir(dir string) string {
 
 //获取文件名称（不带后缀）
 func GetFileBaseName(filepath string) string {
-	basefile := path.Base(filepath)
-	ext := path.Ext(filepath)
 
-	return strings.Replace(basefile, ext, "", 1)
+	return strings.TrimSuffix(filepath, path.Ext(filepath))
 }
 
 //检验目录是否存在

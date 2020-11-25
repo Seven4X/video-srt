@@ -1,9 +1,9 @@
 package oss
 
 import (
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"strconv"
-	"time"
+	alioss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"log"
+	"sync"
 )
 
 //SDK
@@ -15,52 +15,38 @@ type AliyunOss struct {
 	AccessKeySecret string
 	BucketName      string //yourBucketName
 	BucketDomain    string //Bucket 域名
+	UploadPath      string //bucket 前缀
 }
 
-//获取Buckets列表
-func (c AliyunOss) GetListBuckets() ([]string, error) {
-	client, err := oss.New(c.Endpoint, c.AccessKeyId, c.AccessKeySecret)
+var (
+	client *alioss.Client
+	once   sync.Once
+	bucket *alioss.Bucket
+)
+
+func (c AliyunOss) InitOssClient() {
+	// 创建OSSClient实例
+	cli, err := alioss.New(c.Endpoint, c.AccessKeyId, c.AccessKeySecret)
 	if err != nil {
-		return nil, err
+		log.Fatal(err.Error())
 	}
-
-	lsRes, err := client.ListBuckets()
+	client = cli
+	// 获取存储空间
+	buck, err := client.Bucket(c.BucketName)
 	if err != nil {
-		return nil, err
+		log.Fatal(err.Error())
 	}
-
-	result := []string{}
-	for _, bucket := range lsRes.Buckets {
-		result = append(result, bucket.Name)
-	}
-
-	return result, nil
+	bucket = buck
 }
 
 //上传本地文件
 //localFileName:本地文件
 //objectName:oss文件名称
 func (c AliyunOss) UploadFile(localFileName string, objectName string) (string, error) {
-	// 创建OSSClient实例
-	client, err := oss.New(c.Endpoint, c.AccessKeyId, c.AccessKeySecret)
-	if err != nil {
-		return "", err
-	}
-	// 获取存储空间
-	bucket, err := client.Bucket(c.BucketName)
-	if err != nil {
-		return "", err
-	}
-
-	//分日期存储
-	date := time.Now()
-	year := date.Year()
-	month := date.Month()
-	day := date.Day()
-	objectName = strconv.Itoa(year) + "/" + strconv.Itoa(int(month)) + "/" + strconv.Itoa(day) + "/" + objectName
+	once.Do(c.InitOssClient)
 
 	// 上传文件
-	err = bucket.PutObjectFromFile(objectName, localFileName)
+	err := bucket.PutObjectFromFile(objectName, localFileName)
 	if err != nil {
 		return "", err
 	}
@@ -69,6 +55,12 @@ func (c AliyunOss) UploadFile(localFileName string, objectName string) (string, 
 }
 
 //获取文件 url link
-func (c AliyunOss) GetObjectFileUrl(objectFile string) string {
-	return c.BucketDomain + "/" + objectFile
+func (c AliyunOss) GetObjectFileUrl(objectFile string) (string, error) {
+	once.Do(c.InitOssClient)
+	signedUrl, err := bucket.SignURL(objectFile, alioss.HTTPGet, 60)
+	if err == nil {
+		log.Print("signedUrl:\t" + signedUrl)
+		return signedUrl, nil
+	}
+	return "", err
 }

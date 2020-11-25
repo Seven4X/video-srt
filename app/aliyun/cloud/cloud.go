@@ -5,14 +5,16 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/pkg/errors"
+	"log"
 	"strconv"
+	"sync"
 	"time"
 )
 
 //SDK
 //https://help.aliyun.com/document_detail/94072.html?spm=a2c4g.11186623.6.584.3a1153d5yDFr5B
 
-type AliyunClound struct {
+type AliyunCloud struct {
 	AccessKeyId     string
 	AccessKeySecret string
 	AppKey          string
@@ -63,14 +65,22 @@ const STATUS_SUCCESS string = "SUCCESS"
 const STATUS_RUNNING string = "RUNNING"
 const STATUS_QUEUEING string = "QUEUEING"
 
+var once sync.Once
+var client *sdk.Client
+
+func (c AliyunCloud) initSdkClient() {
+	var err error
+	client, err = sdk.NewClientWithAccessKey(REGION_ID, c.AccessKeyId, c.AccessKeySecret)
+	if err != nil {
+		println(err.Error())
+		return
+	}
+}
+
 //发起录音文件识别
 //接口文档 https://help.aliyun.com/document_detail/90727.html?spm=a2c4g.11186623.6.581.691af6ebYsUkd1
-func (c AliyunClound) NewAudioFile(fileLink string) (string, *sdk.Client, error) {
-	client, err := sdk.NewClientWithAccessKey(REGION_ID, c.AccessKeyId, c.AccessKeySecret)
-	if err != nil {
-		return "", client, err
-	}
-
+func (c AliyunCloud) NewAudioFile(fileLink string) (string, error) {
+	once.Do(c.initSdkClient)
 	postRequest := requests.NewCommonRequest()
 	postRequest.Domain = DOMAIN
 	postRequest.Version = API_VERSION
@@ -88,24 +98,26 @@ func (c AliyunClound) NewAudioFile(fileLink string) (string, *sdk.Client, error)
 	// to json
 	task, err := json.Marshal(mapTask)
 	if err != nil {
-		return "", client, errors.New("to json error .")
+		return "", errors.New("to json error .")
 	}
 	postRequest.FormParams[KEY_TASK] = string(task)
 	// 发起请求
 	postResponse, err := client.ProcessCommonRequest(postRequest)
 	if err != nil {
-		return "", client, err
+		return "", err
 	}
+	log.Print("提交语音识别任务成功")
+
 	postResponseContent := postResponse.GetHttpContentString()
 	//校验请求
 	if postResponse.GetHttpStatus() != 200 {
-		return "", client, errors.New("录音文件识别请求失败 , Http错误码 : " + strconv.Itoa(postResponse.GetHttpStatus()))
+		return "", errors.New("录音文件识别请求失败 , Http错误码 : " + strconv.Itoa(postResponse.GetHttpStatus()))
 	}
 	//解析数据
 	var postMapResult map[string]interface{}
 	err = json.Unmarshal([]byte(postResponseContent), &postMapResult)
 	if err != nil {
-		return "", client, errors.New("to map struct error .")
+		return "", errors.New("to map struct error .")
 	}
 
 	var taskId = ""
@@ -115,15 +127,18 @@ func (c AliyunClound) NewAudioFile(fileLink string) (string, *sdk.Client, error)
 	//检验结果
 	if statusText == STATUS_SUCCESS {
 		taskId = postMapResult[KEY_TASK_ID].(string)
-		return taskId, client, nil
+		log.Print("taskId:\t" + taskId)
+		return taskId, nil
 	}
 
-	return "", client, errors.New("录音文件识别请求失败 !")
+	return "", errors.New("录音文件识别请求失败 !")
 }
 
 //获取录音文件识别结果
 //接口文档 https://help.aliyun.com/document_detail/90727.html?spm=a2c4g.11186623.6.581.691af6ebYsUkd1
-func (c AliyunClound) GetAudioFileResult(taskId string, client *sdk.Client, callback func(result []byte)) error {
+func (c AliyunCloud) GetAudioFileResult(taskId string, callback func(result []byte)) error {
+	once.Do(c.initSdkClient)
+
 	getRequest := requests.NewCommonRequest()
 	getRequest.Domain = DOMAIN
 	getRequest.Version = API_VERSION

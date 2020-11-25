@@ -1,62 +1,46 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/seven4x/videosrt/app"
-	"log"
+	"github.com/spf13/cobra"
 	"os"
-	"path/filepath"
-	"time"
+)
+
+var (
+	fileName string
+	instance = app.NewByConfig(CONFIG)
 )
 
 //定义配置文件
 const CONFIG = "config.ini"
 
+var rootCmd = &cobra.Command{
+	Use:   "srt",
+	Short: "srt",
+	Long:  `srt`,
+	Run: func(cmd *cobra.Command, args []string) {
+		instance.Run(fileName)
+	},
+}
+var mp3Cmd = &cobra.Command{
+	Use:   "audio",
+	Short: "audio",
+	Long:  `audio`,
+	Run: func(cmd *cobra.Command, args []string) {
+		instance.RunWithoutExtract(fileName)
+	},
+}
+
+func Execute() {
+	rootCmd.PersistentFlags().StringVarP(&fileName, "fileName", "f", "demo.mp4", "fileName")
+	rootCmd.MarkFlagRequired("fileName")
+	rootCmd.AddCommand(mp3Cmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
 func main() {
-
-	//致命错误捕获
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("")
-			log.Printf("错误:\n%v", err)
-
-			time.Sleep(time.Second * 5)
-		}
-	}()
-
-	appDir, err := filepath.Abs(filepath.Dir(os.Args[0])) //应用执行根目录
-	if err != nil {
-		panic(err)
-	}
-
-	//初始化
-	if len(os.Args) < 2 {
-		os.Args = append(os.Args, "")
-	}
-
-	var video string
-
-	//设置命令行参数
-	flag.StringVar(&video, "f", "", "enter a video file waiting to be processed .")
-
-	flag.Parse()
-
-	if video == "" && os.Args[1] != "" && os.Args[1] != "-f" {
-		video = os.Args[1]
-	}
-
-	//获取应用
-	instance := app.NewApp(CONFIG)
-
-	appDir = app.WinDir(appDir)
-
-	//初始化应用
-	instance.Init(appDir)
-
-	//调起应用
-	instance.Run(app.WinDir(video))
-
-	//延迟退出
-	time.Sleep(time.Second * 1)
+	Execute()
 }
