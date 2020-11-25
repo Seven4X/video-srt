@@ -45,9 +45,14 @@ func (c AliyunOss) InitOssClient() {
 //objectName:oss文件名称
 func (c AliyunOss) UploadFile(localFileName string, objectName string) (string, error) {
 	once.Do(c.InitOssClient)
+	b, err := bucket.IsObjectExist(objectName)
+	if b {
+		log.Printf("改文件已存在")
+		return objectName, nil
+	}
 
 	// 上传文件
-	err := bucket.PutObjectFromFile(objectName, localFileName)
+	err = bucket.PutObjectFromFile(objectName, localFileName)
 	if err != nil {
 		return "", err
 	}

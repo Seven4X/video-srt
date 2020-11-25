@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
 	"os"
@@ -116,4 +117,31 @@ func RepeatStr(str string, s string, length int, before bool) string {
 	} else {
 		return str + strings.Repeat(s, (length-ln))
 	}
+}
+
+//校验文件是否存在
+func ValidVideo(video string) bool {
+	_, err := os.Stat(video) //os.Stat获取文件信息
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
+}
+
+func GetMp3FileList(fileName string) []string {
+	file, err := os.Open(fileName)
+	if err != nil {
+		println(err.Error())
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	mp3s := make([]string, 0)
+	for scanner.Scan() {
+		file := scanner.Text()
+		mp3s = append(mp3s, file)
+	}
+	return mp3s
 }

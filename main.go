@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 
@@ -43,23 +42,8 @@ var clearCmd = &cobra.Command{
 	Short: "clear",
 	Long:  `clear`,
 	Run: func(cmd *cobra.Command, args []string) {
-		instance.ClearOssFile(getMp3FileList(app.Mp3UploadRecord))
+		instance.ClearOssFile(app.GetMp3FileList(app.Mp3UploadRecord))
 	},
-}
-
-func getMp3FileList(fileName string) []string {
-	file, err := os.Open(fileName)
-	if err != nil {
-		println(err.Error())
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	mp3s := make([]string, 0)
-	for scanner.Scan() {
-		file := scanner.Text()
-		mp3s = append(mp3s, file)
-	}
-	return mp3s
 }
 
 func Execute() {
