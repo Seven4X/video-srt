@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com.wxbool/video-srt/videosrt"
+	"github.com/seven4x/videosrt/app"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,7 +32,7 @@ func main() {
 
 	//初始化
 	if len(os.Args) < 2 {
-		os.Args = append(os.Args , "")
+		os.Args = append(os.Args, "")
 	}
 
 	var video string
@@ -47,15 +47,15 @@ func main() {
 	}
 
 	//获取应用
-	app := videosrt.NewApp(CONFIG)
+	instance := app.NewApp(CONFIG)
 
-	appDir = videosrt.WinDir(appDir)
+	appDir = app.WinDir(appDir)
 
 	//初始化应用
-	app.Init(appDir)
+	instance.Init(appDir)
 
 	//调起应用
-	app.Run(videosrt.WinDir(video))
+	instance.Run(app.WinDir(video))
 
 	//延迟退出
 	time.Sleep(time.Second * 1)
