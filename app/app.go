@@ -13,6 +13,8 @@ import (
 	"strconv"
 )
 
+const Mp3UploadRecord = "upload-mp3.txt"
+
 //主应用
 type VideoSrt struct {
 	AliyunOss   oss.AliyunOss     //oss
@@ -113,6 +115,12 @@ func (app *VideoSrt) UploadAudioToCloud(audioFile string) string {
 	if file, e := target.UploadFile(audioFile, bucketPath); e != nil {
 		panic(e)
 	} else {
+		logFile, err := os.OpenFile(Mp3UploadRecord, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			println(err.Error())
+		}
+		defer logFile.Close()
+		logFile.WriteString(file + "\n")
 		return file
 	}
 }
@@ -240,4 +248,11 @@ func MakeSubtitleText(index int, startTime int64, endTime int64, text string) st
 	content.WriteString("\n")
 	content.WriteString("\n")
 	return content.String()
+}
+
+func (app *VideoSrt) ClearOssFile(files []string) {
+	if len(files) < 1 {
+		return
+	}
+	app.AliyunOss.RemoveFile(files)
 }

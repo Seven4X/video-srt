@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"encoding/json"
 	alioss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"log"
 	"sync"
@@ -52,6 +53,16 @@ func (c AliyunOss) UploadFile(localFileName string, objectName string) (string, 
 	}
 
 	return objectName, nil
+}
+
+func (c AliyunOss) RemoveFile(objectNames []string) {
+	once.Do(c.InitOssClient)
+
+	result, err := bucket.DeleteObjects(objectNames)
+	if err != nil {
+		println(err.Error())
+	}
+	log.Print(json.Marshal(result))
 }
 
 //获取文件 url link

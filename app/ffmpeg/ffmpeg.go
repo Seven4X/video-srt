@@ -1,12 +1,15 @@
 package ffmpeg
 
 import (
-	"github.com/floostack/transcoder/ffmpeg"
 	"log"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/floostack/transcoder/ffmpeg"
 )
 
 var (
@@ -19,14 +22,44 @@ var (
 
 func init() {
 	println("当前系统:\t" + runtime.GOOS)
+	execPath := getExecPath()
+	println("当前目录：\t" + execPath)
 	if runtime.GOOS == "windows" {
-		ffmpegConf.FfmpegBinPath = "./bin/win/ffmpeg"
-		ffmpegConf.FfprobeBinPath = "./bin/win/ffprobe"
+		ffmpegConf.FfmpegBinPath = execPath + "/bin/win/ffmpeg"
+		ffmpegConf.FfprobeBinPath = execPath + "/bin/win/ffprobe"
 	}
 }
 func exist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+func getExecPath() string {
+
+	execPath, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		log.Fatal(err)
+	}
+	//    Is Symlink
+	fi, err := os.Lstat(execPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+		execPath, err = os.Readlink(execPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	execDir := filepath.Dir(execPath)
+	if execDir == "." {
+		execDir, err = os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return execDir
 }
 
 //提取视频音频

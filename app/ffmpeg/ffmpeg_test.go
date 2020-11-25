@@ -16,3 +16,7 @@ func TestPath(t *testing.T) {
 	println(filepath.Ext("/Users/seven/Movies/ApowerREC/20201119_212227.mp4"))
 	println(filepath.Dir("/Users/seven/Movies/ApowerREC/20201119_212227.mp4"))
 }
+
+func TestGetExecPath(t *testing.T) {
+	getExecPath()
+}
